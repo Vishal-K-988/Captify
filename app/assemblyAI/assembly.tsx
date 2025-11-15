@@ -1,11 +1,25 @@
+"use client";
+
+import { useUploadStore } from "../store/uploadStore";
 import { AssemblyAI } from "assemblyai";
 
-const apiKey = process.env.Assembly_AI; 
-if(!apiKey) {
-    throw new Error ("Missing ASSEMBLY_AI is missing ") ;
-}
+export function Captions() {
+  const uploadURL = useUploadStore((s: any ) => s.uploadURL);
+  const uploadDone = useUploadStore((s: any ) => s.uploadDone);
 
-// client 
-const client = new AssemblyAI({
-    apiKey 
-})
+  const apiKey = process.env.NEXT_PUBLIC_ASSEMBLY_KEY;
+
+  if (!apiKey) throw new Error("Missing Assembly API key");
+
+  if (!uploadDone) {
+    return <>Upload a video first!</>;
+  }
+
+  console.log("Uploaded S3 File URL:", uploadURL);
+
+  const client = new AssemblyAI({ apiKey });
+
+  // Now you can call AssemblyAI transcript API here
+
+  return <>Ready to generate captions!</>;
+}

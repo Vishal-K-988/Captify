@@ -1,72 +1,66 @@
-'use client'
+"use client";
 
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { FileType } from "lucide-react";
-import { useState } from "react"
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
+import { useUploadStore } from "../store/uploadStore";
 
 export function UploadFile() {
-    const [uploading, setUploading ] = useState(false) ;
-    const [preSignedURL , setPresignedURL ] = useState("");
+  const [uploading, setUploading] = useState(false);
 
-    async function uploadFile(e:any) {
+  const setUploadURL = useUploadStore((s : any) => s.setUploadURL);
+  const setUploadDone = useUploadStore((s : any ) => s.setUploadDone);
 
-        try {
-        console.log("uploading the FILE "); 
+  async function uploadFile(e: any) {
+    try {
+      const file = e.target.files[0];
+      if (!file) return;
 
-        const file = e.target.files[0];
-        if(!file)  {
-            console.log ("file is not present ") 
-            return ;
-        }
+      setUploading(true);
 
-        // if file is selected -> we will send a post req 
-        setUploading(true);
+      // generating the r presigned URL
+      const res = await fetch("/api/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: `videos/${file.name.replace(/\s+/g, "_")}`,
+          fileType: file.type,
+        }),
+      });
 
-        // getting the pre-signed url 
-        const res = await fetch("/api/upload-url", {
-            method : "POST" , 
-           headers: { "Content-Type": "application/json" },
-            body : JSON.stringify({
-                fileName :`videos/${file.name.replace(/\s+/g, "_")}`,
-                fileType: file.type
-            })
-        });
+      const { uploadURL } = await res.json();
+
+      // upload file to s3 with pre-Signed url 
+      const uploadRes = await fetch(uploadURL, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "video/mp4",
+        },
+        body: file,
+      });
+
+      setUploading(false);
+
+      if (uploadRes.ok) {
         
+        setUploadURL(uploadRes.url);
+        setUploadDone(uploadRes.status);
 
-        const {uploadURL  } = await res.json ();
+        alert("File successfully uploaded!");
 
-
-        // uploading the file to s3 
-       const testing =  await fetch (uploadURL , {
-            method : "PUT",
-            headers : {
-                "Content-Type" : "video/mp4"
-            },
-            body : file 
-        });
-
-        console.log (" Response while uploading to S3 from /components/fileupload.tsx/43   : ", testing  )
-
-        // after all this thing we reset the Uploading status 
-        setUploading(false); 
-        setPresignedURL(uploadURL)
-        
-        alert ("File uploading fdone , here's is the Presigned url for ASSEMBLT AI : " + uploadURL)
+      } else {
+        alert("Upload failed");
+      }
+    } catch (err) {
+      console.error(err);
+      setUploading(false);
     }
-    catch(error ) {
-            console.log("error occured :  " , error )
-    }
-
-    }
+  }
 
   return (
-    <div className="grid  w-full max-w-sm items-center mx-5 gap-4  ">
-      <Label htmlFor="Video">Upload Video </Label>
-      <Input id="video" type="file"accept="video/mp4"  onChange={uploadFile}/>
-      
-      <h3 className="font-extrabold text-2xl "> status of uploading  {uploading} and the presigned url : {preSignedURL}</h3>
-
+    <div className="grid w-full max-w-sm items-center gap-4 mx-5">
+      <Label htmlFor="video">Upload Video</Label>
+      <Input id="video" type="file" accept="video/mp4" onChange={uploadFile} />
     </div>
-  )
+  );
 }
