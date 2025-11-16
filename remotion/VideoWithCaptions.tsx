@@ -13,10 +13,12 @@ import {
   useVideoConfig,
   useCurrentFrame,
   Video,
-  interpolate,
-  Sequence,
 } from "remotion";
 import { TikTokCaption } from "./TikTokCaption";
+import { BottomCenteredCaption } from "./BottomCenteredCaption";
+import { TopBarCaption } from "./TopBarCaption";
+import { KaraokeCaption } from "./KaraokeCaption";
+import type { CaptionStyle } from "./CaptionStyles";
 
 // these are the response which we get from the Assembly AI in order to display the captions on the video ! 
 interface Word {
@@ -30,11 +32,13 @@ interface Word {
 interface VideoWithCaptionsProps {
   videoUrl: string;
   words: Word[];
+  captionStyle?: CaptionStyle;
 }
 
 export const VideoWithCaptions: React.FC<VideoWithCaptionsProps> = ({
   videoUrl,
   words,
+  captionStyle = "tiktok",
 }) => {
   const { fps, durationInFrames } = useVideoConfig();
   const frame = useCurrentFrame();
@@ -45,12 +49,31 @@ export const VideoWithCaptions: React.FC<VideoWithCaptionsProps> = ({
     (word) => currentTime >= word.start && currentTime <= word.end
   );
 
-
   const currentCaptionText = visibleWords.map((w) => w.text).join(" ");
 
-  // Calculate the time range for the current caption
-  const captionStart = visibleWords.length > 0 ? Math.min(...visibleWords.map(w => w.start)) : 0;
-  const captionEnd = visibleWords.length > 0 ? Math.max(...visibleWords.map(w => w.end)) : 0;
+  // Render caption based on selected style
+  const renderCaption = () => {
+    if (visibleWords.length === 0) {
+      return null;
+    }
+
+    switch (captionStyle) {
+      case "bottom-centered":
+        return <BottomCenteredCaption text={currentCaptionText} />;
+      
+      case "top-bar":
+        return <TopBarCaption text={currentCaptionText} />;
+      
+      case "karaoke":
+        // For karaoke, pass all words and current time for word-by-word highlighting
+        // KaraokeCaption handles its own word filtering
+        return <KaraokeCaption words={words} currentTime={currentTime} />;
+      
+      case "tiktok":
+      default:
+        return <TikTokCaption text={currentCaptionText} />;
+    }
+  };
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
@@ -69,9 +92,10 @@ export const VideoWithCaptions: React.FC<VideoWithCaptionsProps> = ({
       </AbsoluteFill>
 
       {/* Captions Layer - Show words that are visible at current time */}
-      {visibleWords.length > 0 && (
+      {/* For karaoke, show even if no words at exact current time (shows upcoming words) */}
+      {(visibleWords.length > 0 || captionStyle === "karaoke") && (
         <AbsoluteFill>
-          <TikTokCaption text={currentCaptionText} />
+          {renderCaption()}
         </AbsoluteFill>
       )}
     </AbsoluteFill>

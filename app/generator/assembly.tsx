@@ -12,6 +12,7 @@ const Player = dynamic(
 
 // Import Remotion composition
 import { VideoWithCaptions } from "@/remotion/VideoWithCaptions";
+import { CAPTION_STYLES, type CaptionStyle } from "@/remotion/CaptionStyles";
 
 // response from the Assem,bly AI 
 interface Word {
@@ -28,6 +29,8 @@ export function Captions() {
   const getURL = useUploadStore((s) => s.getURL);
   const transcriptionData = useUploadStore((s) => s.transcriptionData);
   const setTranscriptionData = useUploadStore((s) => s.setTranscriptionData);
+  const selectedCaptionStyle = useUploadStore((s) => s.selectedCaptionStyle);
+  const setSelectedCaptionStyle = useUploadStore((s) => s.setSelectedCaptionStyle);
 
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
@@ -388,7 +391,19 @@ export function Captions() {
               return currentTime >= wordStart && currentTime <= wordEnd;
             });
 
-            if (visibleWords.length > 0) {
+            // For karaoke style, always draw (it handles its own word filtering)
+            // For other styles, only draw if there are visible words
+            if (selectedCaptionStyle === "karaoke") {
+              drawCaption(
+                ctx,
+                "", // Empty text for karaoke (it uses words array)
+                canvas.width,
+                canvas.height,
+                selectedCaptionStyle,
+                transcriptionData.words,
+                currentTime
+              );
+            } else if (visibleWords.length > 0) {
               const captionText = visibleWords.map((w) => w.text || "").filter(Boolean).join(" ");
               // FOr my debuggin I guess I will keep this ! 
                 // Debug: Log captions periodically (every 0.5 seconds)
@@ -397,7 +412,15 @@ export function Captions() {
               }
               
               if (captionText.trim().length > 0) {
-                drawCaption(ctx, captionText, canvas.width, canvas.height);
+                drawCaption(
+                  ctx,
+                  captionText,
+                  canvas.width,
+                  canvas.height,
+                  selectedCaptionStyle,
+                  transcriptionData.words,
+                  currentTime
+                );
               }
             }
           } catch (drawError) {
@@ -453,58 +476,66 @@ export function Captions() {
     }
   };
 
-  // Helper function to draw TikTok-style caption
+  // Helper function to draw captions based on selected style
   const drawCaption = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    canvasWidth: number,
+    canvasHeight: number,
+    style: CaptionStyle,
+    words?: Word[],
+    currentTime?: number
+  ) => {
+    switch (style) {
+      case "karaoke":
+        // Karaoke style doesn't need text, it uses words array
+        if (words && currentTime !== undefined) {
+          drawKaraokeCaption(ctx, words, currentTime, canvasWidth, canvasHeight);
+        }
+        break;
+      case "bottom-centered":
+        if (text && text.trim().length > 0) {
+          drawBottomCenteredCaption(ctx, text, canvasWidth, canvasHeight);
+        }
+        break;
+      case "top-bar":
+        if (text && text.trim().length > 0) {
+          drawTopBarCaption(ctx, text, canvasWidth, canvasHeight);
+        }
+        break;
+      case "tiktok":
+      default:
+        if (text && text.trim().length > 0) {
+          drawTikTokCaption(ctx, text, canvasWidth, canvasHeight);
+        }
+        break;
+    }
+  };
+
+  // TikTok-style caption
+  const drawTikTokCaption = (
     ctx: CanvasRenderingContext2D,
     text: string,
     canvasWidth: number,
     canvasHeight: number
   ) => {
-    // if the tesxt is not present then don't draw the captions 
-    if (!text || text.trim().length === 0) {
-      return; 
-
-    }
+    ctx.save();
 
     const fontSize = 60;
     const padding = 30;
     const maxWidth = canvasWidth * 0.9;
     const bottomOffset = canvasHeight * 0.1;
 
-    // Save context state
-    ctx.save();
-
-    // Set font before measuring
     ctx.font = `bold ${fontSize}px Arial, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    // Measure text
     const metrics = ctx.measureText(text);
     const textWidth = metrics.width;
     const textHeight = fontSize;
 
-    // Calculate background dimensions
-    const bgWidth = Math.min(textWidth + padding * 2, maxWidth);
-    const bgHeight = textHeight + padding * 2;
-    const bgX = (canvasWidth - bgWidth) / 2;
-    const bgY = canvasHeight - bottomOffset - bgHeight / 2;
-
-    // Draw background with rounded corners
-    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-    const radius = 12;
-    ctx.beginPath();
-    ctx.moveTo(bgX + radius, bgY - bgHeight / 2);
-    ctx.lineTo(bgX + bgWidth - radius, bgY - bgHeight / 2);
-    ctx.quadraticCurveTo(bgX + bgWidth, bgY - bgHeight / 2, bgX + bgWidth, bgY - bgHeight / 2 + radius);
-    ctx.lineTo(bgX + bgWidth, bgY + bgHeight / 2 - radius);
-    ctx.quadraticCurveTo(bgX + bgWidth, bgY + bgHeight / 2, bgX + bgWidth - radius, bgY + bgHeight / 2);
-    ctx.lineTo(bgX + radius, bgY + bgHeight / 2);
-    ctx.quadraticCurveTo(bgX, bgY + bgHeight / 2, bgX, bgY + bgHeight / 2 - radius);
-    ctx.lineTo(bgX, bgY - bgHeight / 2 + radius);
-    ctx.quadraticCurveTo(bgX, bgY - bgHeight / 2, bgX + radius, bgY - bgHeight / 2);
-    ctx.closePath();
-    ctx.fill();
+    
+    const bgY = canvasHeight - bottomOffset;
 
     // Draw text
     ctx.fillStyle = "#FFFFFF";
@@ -513,15 +544,14 @@ export function Captions() {
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;
 
-    // Handle text wrapping if needed
-    if (textWidth > maxWidth - padding * 2) {
+    if (textWidth > maxWidth) {
       const words = text.split(" ");
       let line = "";
       let y = bgY;
       for (let i = 0; i < words.length; i++) {
         const testLine = line + words[i] + " ";
         const testMetrics = ctx.measureText(testLine);
-        if (testMetrics.width > maxWidth - padding * 2 && line.length > 0) {
+        if (testMetrics.width > maxWidth && line.length > 0) {
           ctx.fillText(line.trim(), canvasWidth / 2, y);
           line = words[i] + " ";
           y += textHeight + 10;
@@ -534,17 +564,226 @@ export function Captions() {
       ctx.fillText(text, canvasWidth / 2, bgY);
     }
 
-    // Reset shadow
     ctx.shadowColor = "transparent";
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
-    
-    // Restore context state
     ctx.restore();
   };
 
-  // Handle video download
+  //  bottom-centered standard caption
+  const drawBottomCenteredCaption = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    canvasWidth: number,
+    canvasHeight: number
+  ) => {
+    ctx.save();
+
+    const fontSize = 48;
+    const bottomOffset = canvasHeight * 0.08;
+
+    ctx.font = `600 ${fontSize}px Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+
+    const y = canvasHeight - bottomOffset;
+
+    // strong shadow
+    ctx.fillStyle = "#FFFFFF";
+    ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+
+    //  wrapping
+    const maxWidth = canvasWidth * 0.9;
+    const words = text.split(" ");
+    let line = "";
+    let currentY = y;
+
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + (line ? " " : "") + words[i];
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && line.length > 0) {
+        ctx.fillText(line, canvasWidth / 2, currentY);
+        line = words[i];
+        currentY -= fontSize + 10;
+      } else {
+        line = testLine;
+      }
+    }
+    if (line) {
+      ctx.fillText(line, canvasWidth / 2, currentY);
+    }
+
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.restore();
+  };
+
+  // top-bar news-style caption
+  const drawTopBarCaption = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    canvasWidth: number,
+    canvasHeight: number
+  ) => {
+    ctx.save();
+
+    const fontSize = 44;
+    const barHeight = 80;
+    const topOffset = canvasHeight * 0.04;
+
+    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+ 
+    const y = topOffset + 40; 
+    ctx.fillStyle = "#FFFFFF";
+    ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+    ctx.shadowBlur = 2;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+
+    const maxWidth = canvasWidth * 0.95;
+
+    // Handle wrapping
+    const words = text.split(" ");
+    let line = "";
+    let currentY = y;
+
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + (line ? " " : "") + words[i];
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && line.length > 0) {
+        ctx.fillText(line, canvasWidth / 2, currentY);
+        line = words[i];
+        currentY += fontSize + 8;
+      } else {
+        line = testLine;
+      }
+    }
+    if (line) {
+      ctx.fillText(line, canvasWidth / 2, currentY);
+    }
+
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.restore();
+  };
+
+  // karaoke-style caption 
+  const drawKaraokeCaption = (
+    ctx: CanvasRenderingContext2D,
+    words: Word[],
+    currentTime: number,
+    canvasWidth: number,
+    canvasHeight: number
+  ) => {
+    ctx.save();
+
+    // Find visible words
+    const visibleWords = words.filter((word) => {
+      let wordStart = word.start;
+      let wordEnd = word.end;
+      if (wordStart > 1000 || wordEnd > 1000) {
+        wordStart = wordStart / 1000;
+        wordEnd = wordEnd / 1000;
+      }
+      return currentTime >= wordStart - 0.2 && currentTime <= wordEnd + 0.5;
+    });
+
+    if (visibleWords.length === 0) {
+      ctx.restore();
+      return;
+    }
+
+    //  active word
+    const activeWord = words.find((word) => {
+      let wordStart = word.start;
+      let wordEnd = word.end;
+      if (wordStart > 1000 || wordEnd > 1000) {
+        wordStart = wordStart / 1000;
+        wordEnd = wordEnd / 1000;
+      }
+      return currentTime >= wordStart && currentTime <= wordEnd;
+    });
+
+    const fontSize = 56;
+    const bottomOffset = canvasHeight * 0.1;
+    const startX = canvasWidth / 2;
+    let currentX = startX;
+    let currentY = canvasHeight - bottomOffset;
+
+    ctx.textBaseline = "middle";
+
+    // Calculate total width to center
+    let totalWidth = 0;
+    const wordMetrics: Array<{ word: Word; width: number }> = [];
+    for (const word of visibleWords) {
+      ctx.font = `600 ${fontSize}px Arial, sans-serif`;
+      const metrics = ctx.measureText(word.text);
+      const width = metrics.width + 16; 
+      // padding
+      wordMetrics.push({ word, width });
+      totalWidth += width + 8; 
+    }
+    totalWidth -= 8; 
+
+    // Start from center minus half width
+    currentX = startX - totalWidth / 2;
+
+    // Draw each word
+    for (const { word, width } of wordMetrics) {
+      const isActive = activeWord?.text === word.text && activeWord?.start === word.start;
+      const isPast = currentTime > (word.end > 1000 ? word.end / 1000 : word.end);
+
+
+      const textColor = "#FFFFFF";
+      const opacity = isPast ? 0.4 : 1;
+
+    
+      ctx.globalAlpha = opacity;
+      ctx.fillStyle = textColor;
+      
+      
+      if (isActive) {
+        ctx.shadowColor = "rgba(255, 255, 255, 0.8)";
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+      } else {
+        ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+      }
+
+      ctx.font = `${isActive ? "bold" : "600"} ${fontSize}px Arial, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.fillText(word.text, currentX, currentY);
+      
+      // Reset shadow
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      currentX += width + 8;
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  };
+
+ 
+  
   const handleDownload = () => {
     if (renderedVideoUrl) {
       const link = document.createElement("a");
@@ -579,6 +818,32 @@ export function Captions() {
         </div>
       )}
 
+      {/* Caption Style Selector */}
+      {transcriptionData && transcriptionData.words && (
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-3">Caption Style</h2>
+          <div className="flex flex-wrap gap-3 justify-center">
+            {CAPTION_STYLES.map((style) => (
+              <button
+                key={style.id}
+                onClick={() => setSelectedCaptionStyle(style.id)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  selectedCaptionStyle === style.id
+                    ? "bg-blue-600 text-white shadow-lg scale-105"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
+                title={style.description}
+              >
+                {style.name}
+              </button>
+            ))}
+          </div>
+          <p className="text-sm text-gray-500 text-center mt-2">
+            {CAPTION_STYLES.find((s) => s.id === selectedCaptionStyle)?.description}
+          </p>
+        </div>
+      )}
+
       {/* Remotion Player Preview */}
       {transcriptionData && transcriptionData.words && getURL && (
         <div className="mb-8">
@@ -588,7 +853,7 @@ export function Captions() {
               <Player
                 // @ts-expect-error - Remotion Player type compatibility
                 component={VideoWithCaptions}
-                durationInFrames={Math.ceil(getVideoDuration() * 30)} // Convert seconds to frames (30 fps)
+                durationInFrames={Math.ceil(getVideoDuration() * 30)} 
                 compositionWidth={1080}
                 compositionHeight={1920}
                 fps={30}
@@ -596,6 +861,7 @@ export function Captions() {
                 inputProps={{
                   videoUrl: getURL,
                   words: transcriptionData.words,
+                  captionStyle: selectedCaptionStyle,
                 }}
                 style={{
                   width: "100%",

@@ -1,29 +1,14 @@
-/**
- * TikTok-style Caption Component
- * 
- * This component displays captions in TikTok style:
- * - Positioned at the bottom center of the video
- * - Bold, large text with semi-transparent background
- * - Smooth fade-in/fade-out animations
- * - Responsive sizing based on text length
- */
+
 
 import React from "react";
-import { useVideoConfig, useCurrentFrame, interpolate, AbsoluteFill } from "remotion";
+import { AbsoluteFill } from "remotion";
 
 interface TikTokCaptionProps {
   text: string;
 }
 
 export const TikTokCaption: React.FC<TikTokCaptionProps> = ({ text }) => {
-  const { fps, durationInFrames } = useVideoConfig();
-  const frame = useCurrentFrame();
-
-
-  const fadeIn = 1;
-  const fadeOut = 1;
-
-  const opacity = Math.min(fadeIn, fadeOut);
+  const opacity = 1;
 
   // Calculate font size based on text length
   const baseFontSize = 60;
@@ -39,12 +24,13 @@ export const TikTokCaption: React.FC<TikTokCaptionProps> = ({ text }) => {
         justifyContent: "flex-end",
         alignItems: "center",
         paddingBottom: "10%",
-        paddingHorizontal: "5%",
+        paddingLeft: "5%",
+        paddingRight: "5%",
       }}
     >
       <div
         style={{
-          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          backgroundColor: "rgba(0, 0, 0, 0)",
           padding: "20px 30px",
           borderRadius: "12px",
           maxWidth: "90%",

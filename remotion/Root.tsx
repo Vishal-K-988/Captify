@@ -19,6 +19,7 @@ export const RemotionRoot: React.FC = () => {
         defaultProps={{
           videoUrl: "",
           words: [],
+          captionStyle: "tiktok",
         }}
       />
     </>
