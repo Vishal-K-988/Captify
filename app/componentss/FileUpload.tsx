@@ -3,13 +3,16 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useUploadStore } from "../store/uploadStore";
 
 export function UploadFile() {
+    const router = useRouter();
   const [uploading, setUploading] = useState(false);
 
   const setUploadURL = useUploadStore((s : any) => s.setUploadURL);
   const setUploadDone = useUploadStore((s : any ) => s.setUploadDone);
+  const setGetURL = useUploadStore ( (s : any ) => s.setGetURL)
 
   async function uploadFile(e: any) {
     try {
@@ -28,7 +31,7 @@ export function UploadFile() {
         }),
       });
 
-      const { uploadURL } = await res.json();
+      const { uploadURL, fileURL , getURL } = await res.json();
 
       // upload file to s3 with pre-Signed url 
       const uploadRes = await fetch(uploadURL, {
@@ -43,10 +46,13 @@ export function UploadFile() {
 
       if (uploadRes.ok) {
         
-        setUploadURL(uploadRes.url);
+        // Put pre-signed URL 
+        setUploadURL(uploadURL);
         setUploadDone(uploadRes.status);
+        // GET pre-signed url 
+        setGetURL(getURL)
 
-        alert("File successfully uploaded!");
+        router.push("/generator")
 
       } else {
         alert("Upload failed");

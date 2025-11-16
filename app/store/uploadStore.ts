@@ -7,14 +7,22 @@ import { create } from "zustand"
 interface UploadState {
   uploadURL: string;
   uploadDone: boolean;
+  getURL : string;
 
   setUploadURL: (url: string) => void;
   setUploadDone: (done: boolean) => void;
+  setGetURL : (url : string ) => void 
 }
+
+
 export const useUploadStore = create<UploadState>((set) => ({
   uploadURL: "",
   uploadDone: false,
+  getURL : "", 
 
   setUploadURL: (url) => set({ uploadURL: url }),
   setUploadDone: (done) => set({ uploadDone: done }),
+  setGetURL : (url ) => set({
+    getURL : url 
+  })
 }));

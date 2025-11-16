@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { UploadFile } from "../componentss/FileUpload";
-import { Captions } from "../assemblyAI/assembly";
+import { Captions } from "../generator/assembly";
 
 
 export default function Dashboard () {
@@ -24,8 +24,7 @@ return (<>
            <br />
            <br />
            <br />
-           {/* Assembly AI component  */}
-       <Captions/>
+          
         </h1>
     
       
