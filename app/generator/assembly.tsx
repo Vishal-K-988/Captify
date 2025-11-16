@@ -783,14 +783,58 @@ export function Captions() {
 
  
   
-  const handleDownload = () => {
-    if (renderedVideoUrl) {
+  const handleDownload = async () => {
+    if (!renderedVideoUrl) {
+      return;
+    }
+
+    try {
+      let blob: Blob;
+      const filename = "Captify_by_Vishal.mp4";
+ 
+      if (renderedVideoUrl.startsWith("data:video")) {
+ 
+        const response = await fetch(renderedVideoUrl);
+        blob = await response.blob();
+      } 
+      // Check if it's a blob URL (from client rendering)
+      else if (renderedVideoUrl.startsWith("blob:")) {
+        // Fetch the blob from the blob URL
+        const response = await fetch(renderedVideoUrl);
+        blob = await response.blob();
+      }
+      
+      else {
+        // Fetch from URL
+        const response = await fetch(renderedVideoUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch video: ${response.statusText}`);
+        }
+        blob = await response.blob();
+      }
+
+    
+      if (!blob || blob.size === 0) {
+        throw new Error("Invalid video blob");
+      }
+
+  //  download link 
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = renderedVideoUrl;
-      link.download = "video-with-captions.webm";
+      link.href = url;
+      link.download = filename;
+      link.style.display = "none";
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      
+     
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error("Download error:", error);
+      alert(`Failed to download video: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 
