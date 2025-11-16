@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -13,6 +13,8 @@
     "@aws-sdk/s3-request-presigner": "^3.932.0",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "@remotion/cli": "4.0.375",
+    "@remotion/player": "4.0.375",
     "assemblyai": "^4.19.0",
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
@@ -23,6 +25,7 @@
     "next": "16.0.3",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "remotion": "4.0.375",
     "tailwind-merge": "^3.4.0",
     "zustand": "^5.0.8"
   },

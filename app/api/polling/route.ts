@@ -20,7 +20,13 @@ export async function POST(req: Request) {
       const data = await res.json();
 
       if (data.status === "completed") {
-        return NextResponse.json({ text: data.text });
+        // Return full response including words array for caption timing
+        return NextResponse.json({ 
+          text: data.text,
+          words: data.words || [],
+          status: data.status,
+          ...data
+        });
       }
 
       if (data.status === "error") {
