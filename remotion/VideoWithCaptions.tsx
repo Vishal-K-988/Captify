@@ -29,7 +29,7 @@ interface Word {
   speaker?: string;
 }
 
-interface VideoWithCaptionsProps {
+export interface VideoWithCaptionsProps {
   videoUrl: string;
   words: Word[];
   captionStyle?: CaptionStyle;

@@ -13,6 +13,7 @@ const Player = dynamic(
 // Import Remotion composition
 import { VideoWithCaptions } from "@/remotion/VideoWithCaptions";
 import { CAPTION_STYLES, type CaptionStyle } from "@/remotion/CaptionStyles";
+import { HINGLISH_FONT_FAMILY } from "@/remotion/fonts";
 
 // response from the Assem,bly AI 
 interface Word {
@@ -522,11 +523,10 @@ export function Captions() {
     ctx.save();
 
     const fontSize = 60;
-    const padding = 30;
     const maxWidth = canvasWidth * 0.9;
     const bottomOffset = canvasHeight * 0.1;
 
-    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+    ctx.font = `bold ${fontSize}px ${HINGLISH_FONT_FAMILY}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
@@ -583,7 +583,7 @@ export function Captions() {
     const fontSize = 48;
     const bottomOffset = canvasHeight * 0.08;
 
-    ctx.font = `600 ${fontSize}px Arial, sans-serif`;
+    ctx.font = `600 ${fontSize}px ${HINGLISH_FONT_FAMILY}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
 
@@ -634,10 +634,9 @@ export function Captions() {
     ctx.save();
 
     const fontSize = 44;
-    const barHeight = 80;
     const topOffset = canvasHeight * 0.04;
 
-    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+    ctx.font = `bold ${fontSize}px ${HINGLISH_FONT_FAMILY}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
@@ -719,7 +718,7 @@ export function Captions() {
     const bottomOffset = canvasHeight * 0.1;
     const startX = canvasWidth / 2;
     let currentX = startX;
-    let currentY = canvasHeight - bottomOffset;
+    const currentY = canvasHeight - bottomOffset;
 
     ctx.textBaseline = "middle";
 
@@ -727,7 +726,7 @@ export function Captions() {
     let totalWidth = 0;
     const wordMetrics: Array<{ word: Word; width: number }> = [];
     for (const word of visibleWords) {
-      ctx.font = `600 ${fontSize}px Arial, sans-serif`;
+      ctx.font = `600 ${fontSize}px ${HINGLISH_FONT_FAMILY}`;
       const metrics = ctx.measureText(word.text);
       const width = metrics.width + 16; 
       // padding

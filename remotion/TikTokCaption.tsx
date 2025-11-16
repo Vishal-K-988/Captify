@@ -2,6 +2,7 @@
 
 import React from "react";
 import { AbsoluteFill } from "remotion";
+import { HINGLISH_FONT_FAMILY } from "./fonts";
 
 interface TikTokCaptionProps {
   text: string;
@@ -44,6 +45,7 @@ export const TikTokCaption: React.FC<TikTokCaptionProps> = ({ text }) => {
           style={{
             fontSize: `${fontSize}px`,
             fontWeight: "semibold",
+            fontFamily: HINGLISH_FONT_FAMILY,
             color: "#FFFFFF",
             margin: 0,
             lineHeight: 1.3,

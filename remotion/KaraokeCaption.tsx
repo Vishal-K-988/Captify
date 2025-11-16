@@ -1,6 +1,7 @@
 
 import React from "react";
 import { AbsoluteFill } from "remotion";
+import { HINGLISH_FONT_FAMILY } from "./fonts";
 
 interface Word {
   start: number;
@@ -105,6 +106,7 @@ export const KaraokeCaption: React.FC<KaraokeCaptionProps> = ({ words, currentTi
               style={{
                 fontSize: `${fontSize}px`,
                 fontWeight: isActive ? "bold" : "600",
+                fontFamily: HINGLISH_FONT_FAMILY,
                 color: color,
                 backgroundColor: backgroundColor,
                 padding: "4px 8px",

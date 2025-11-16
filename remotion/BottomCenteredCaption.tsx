@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useVideoConfig, useCurrentFrame, interpolate, AbsoluteFill } from "remotion";
+import { HINGLISH_FONT_FAMILY } from "./fonts";
 
 interface BottomCenteredCaptionProps {
   text: string;
@@ -44,6 +45,7 @@ export const BottomCenteredCaption: React.FC<BottomCenteredCaptionProps> = ({ te
         style={{
           fontSize: `${fontSize}px`,
           fontWeight: "600",
+          fontFamily: HINGLISH_FONT_FAMILY,
           color: "#FFFFFF",
           margin: 0,
           lineHeight: 1.4,

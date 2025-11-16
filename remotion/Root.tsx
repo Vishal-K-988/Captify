@@ -10,6 +10,7 @@ export const RemotionRoot: React.FC = () => {
     <>
       <Composition
         id="VideoWithCaptions"
+        // @ts-expect-error - Remotion Composition type compatibility
         component={VideoWithCaptions}
         // thesse are the meta data which are linked with the output video 
         durationInFrames={3000} 

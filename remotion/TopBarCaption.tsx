@@ -1,6 +1,7 @@
 
 import React from "react";
 import { useVideoConfig, useCurrentFrame, interpolate, AbsoluteFill } from "remotion";
+import { HINGLISH_FONT_FAMILY } from "./fonts";
 
 interface TopBarCaptionProps {
   text: string;
@@ -57,6 +58,7 @@ export const TopBarCaption: React.FC<TopBarCaptionProps> = ({ text }) => {
           style={{
             fontSize: `${fontSize}px`,
             fontWeight: "bold",
+            fontFamily: HINGLISH_FONT_FAMILY,
             color: "#FFFFFF",
             margin: 0,
             lineHeight: 1.3,
