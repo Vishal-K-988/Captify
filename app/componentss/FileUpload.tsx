@@ -65,7 +65,7 @@ export function UploadFile() {
 
   return (
     <div className="grid w-full max-w-sm items-center gap-4 mx-5">
-      <Label htmlFor="video">Upload Video</Label>
+      <Label htmlFor="video">Upload your video or audio file</Label>
       <Input id="video" type="file" accept="video/mp4" onChange={uploadFile} />
     </div>
   );

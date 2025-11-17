@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans, Noto_Sans_Devanagari } from "next/font/google";
 import "./globals.css";
 import { ThemeToggler } from "./componentss/Theme";
+import { DockDemo } from "./componentss/Dock";
+import { ComicText } from "@/components/ui/comic-text";
 
 
 const geistSans = Geist({
@@ -45,12 +47,17 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoSans.variable} ${notoSansDevanagari.variable} antialiased`}
       > 
-      <div className="absolute top-4 right-4">
+      <div className="fixed top-4 right-4 z-[100]">
+       
       <ThemeToggler/> 
       </div>
          
         {children}
+        <div className="fixed bottom-2 sm:bottom-3 left-0 w-full flex items-center justify-center z-50 px-2 sm:px-4">
+        <DockDemo />
+      </div>
       </body>
+      
     </html>
   );
 }
