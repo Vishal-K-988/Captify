@@ -1,6 +1,6 @@
 import { HeroVideoDialog } from "@/components/ui/hero-video-dialog"
 export function HeroVideoDialogDemo() {
-    const videoURL = "https://www.youtube.com/watch?v=ak-Ei831dtk"
+    const videoURL = "https://youtu.be/bLdggi6cTVE"
   return (
     <div className="relative w-full max-w-[95vw] sm:max-w-lg md:max-w-xl lg:max-w-2xl">
       <HeroVideoDialog
