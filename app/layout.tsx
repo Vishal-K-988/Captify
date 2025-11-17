@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Noto_Sans, Noto_Sans_Devanagari } from "next/font/go
 import "./globals.css";
 import { ThemeToggler } from "./componentss/Theme";
 
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -43,8 +44,11 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoSans.variable} ${notoSansDevanagari.variable} antialiased`}
-      >
-         <ThemeToggler/> 
+      > 
+      <div className="absolute top-4 right-4">
+      <ThemeToggler/> 
+      </div>
+         
         {children}
       </body>
     </html>

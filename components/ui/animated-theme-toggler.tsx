@@ -13,15 +13,31 @@ interface AnimatedThemeTogglerProps
 
 export const AnimatedThemeToggler = ({
   className,
-  duration = 400,
+  duration = 600,
   ...props
 }: AnimatedThemeTogglerProps) => {
-  const [isDark, setIsDark] = useState(false)
+  const [isDark, setIsDark] = useState(true)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     const updateTheme = () => {
       setIsDark(document.documentElement.classList.contains("dark"))
+    }
+
+    // Check localStorage for saved theme preference
+    const savedTheme = localStorage.getItem("theme")
+    
+    if (savedTheme) {
+      // Apply saved theme
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark")
+      } else {
+        document.documentElement.classList.remove("dark")
+      }
+    } else {
+      // Default to dark theme if no preference is saved
+      document.documentElement.classList.add("dark")
+      localStorage.setItem("theme", "dark")
     }
 
     updateTheme()

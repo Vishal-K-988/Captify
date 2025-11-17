@@ -1,4 +1,4 @@
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button"
-export function GetStarted() {
-  return <InteractiveHoverButton>Get Started </InteractiveHoverButton>
+export function GetStarted({ onClick }: { onClick: () => void }) {
+  return <InteractiveHoverButton onClick={onClick}>Get Started </InteractiveHoverButton>
 }
