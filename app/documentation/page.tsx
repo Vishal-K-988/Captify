@@ -677,7 +677,7 @@ ASSEMBLYAI_API_KEY=your_assemblyai_api_key`}</code>
             <p className="text-sm text-muted-foreground">
               Captify Documentation - Complete guide to video captioning application
             </p>
-            <Link href="/">
+            <Link href="https://captify-neon.vercel.app/">
               <Button variant="outline">Back to Home</Button>
             </Link>
           </div>
