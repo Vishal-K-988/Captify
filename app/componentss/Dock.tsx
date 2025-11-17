@@ -90,10 +90,9 @@ const DATA = {
 
 export function DockDemo() {
   return (
-    <div className="flex flex-col items-center justify-center">
-     
+    <div className="flex flex-col items-center justify-center w-full max-w-full">
       <TooltipProvider>
-        <Dock direction="middle">
+        <Dock direction="middle" className="scale-90 sm:scale-100">
           {DATA.navbar.map((item) => (
             <DockIcon key={item.label}>
               <Tooltip>
@@ -103,19 +102,19 @@ export function DockDemo() {
                     aria-label={item.label}
                     className={cn(
                       buttonVariants({ variant: "ghost", size: "icon" }),
-                      "size-12 rounded-full"
+                      "size-10 sm:size-12 rounded-full"
                     )}
                   >
-                    <item.icon className="size-4" />
+                    <item.icon className="size-3.5 sm:size-4" />
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{item.label}</p>
+                  <p className="text-xs sm:text-sm">{item.label}</p>
                 </TooltipContent>
               </Tooltip>
             </DockIcon>
           ))}
-          <Separator orientation="vertical" className="h-full" />
+          <Separator orientation="vertical" className="h-full hidden sm:block" />
           {Object.entries(DATA.contact.social).map(([name, social]) => (
             <DockIcon key={name}>
               <Tooltip>
@@ -125,14 +124,14 @@ export function DockDemo() {
                     aria-label={social.name}
                     className={cn(
                       buttonVariants({ variant: "ghost", size: "icon" }),
-                      "size-12 rounded-full"
+                      "size-10 sm:size-12 rounded-full"
                     )}
                   >
-                    <social.icon className="size-4" />
+                    <social.icon className="size-3.5 sm:size-4" />
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{name}</p>
+                  <p className="text-xs sm:text-sm">{name}</p>
                 </TooltipContent>
               </Tooltip>
             </DockIcon>

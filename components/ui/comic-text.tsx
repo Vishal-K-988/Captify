@@ -27,12 +27,12 @@ export function ComicText({
 
   return (
     <motion.div
-      className={cn("text-center select-none", className)}
+      className={cn("text-center select-none px-2 sm:px-4", className)}
       style={{
-        fontSize: `${fontSize}rem`,
+        fontSize: `clamp(${fontSize * 0.4}rem, ${fontSize * 0.6}rem + 2vw, ${fontSize}rem)`,
         fontFamily: "'Bangers', 'Comic Sans MS', 'Impact', sans-serif",
         fontWeight: "900",
-        WebkitTextStroke: `${fontSize * 0.35}px #000000`, // Thick black outline
+        WebkitTextStroke: `clamp(${fontSize * 0.15}px, ${fontSize * 0.25}px + 0.5vw, ${fontSize * 0.35}px) #000000`,
         transform: "skewX(-10deg)",
         textTransform: "uppercase",
         filter: `

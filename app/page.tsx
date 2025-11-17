@@ -27,22 +27,26 @@ export default function Home() {
   return (
     <>
     <div className="w-full bg-zinc-50 font-sans dark:bg-black">
-      <div className="flex flex-col items-center justify-center min-h-screen w-full">
+
+      <div className="flex flex-col items-center justify-center min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12">
         <ComicText>Captify</ComicText>
-        <div className="mt-6">
+        <div className="mt-4 sm:mt-6">
           <GetStarted onClick={handleClick} />
         </div>
       </div>
       
-      <div className="flex items-center justify-between min-h-screen w-full px-16 py-12 gap-16">
-        <div className="flex-1 flex justify-end pr-8">
+    
+      <div className="flex flex-col md:flex-row items-center justify-center min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 md:px-8 md:py-16 lg:px-16 lg:gap-16 gap-8 md:gap-12">
+        <div className="flex-1 flex justify-center md:justify-end w-full md:w-auto md:pr-8">
           <Description />
         </div>
-        <div className="flex-1 flex justify-start pl-8">
+        <div className="flex-1 flex justify-center md:justify-start w-full md:w-auto md:pl-8">
           <HeroVideoDialogDemo />
         </div>
       </div>
-      <div className="fixed bottom-3 left-0 w-full flex items-center justify-center z-50">
+      
+    
+      <div className="fixed bottom-2 sm:bottom-3 left-0 w-full flex items-center justify-center z-50 px-2 sm:px-4">
         <DockDemo />
       </div>
     </div>
