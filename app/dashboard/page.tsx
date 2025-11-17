@@ -4,6 +4,7 @@
 import { DashboardTitle } from "../componentss/Dashboard";
 import { Background } from "../componentss/DashboardBackground";
 import { UploadFile } from "../componentss/FileUpload";
+import { Loader } from "../componentss/Loader";
 
 
 export default function Dashboard () {

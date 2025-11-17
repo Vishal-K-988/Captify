@@ -14,6 +14,9 @@ const Player = dynamic(
 import { VideoWithCaptions } from "@/remotion/VideoWithCaptions";
 import { CAPTION_STYLES, type CaptionStyle } from "@/remotion/CaptionStyles";
 import { HINGLISH_FONT_FAMILY } from "@/remotion/fonts";
+import { Loader } from "../componentss/Loader";
+import { LoaderDescription } from "../componentss/LoaderDescription";
+
 
 // response from the Assem,bly AI 
 interface Word {
@@ -26,6 +29,7 @@ interface Word {
 
 
 export function Captions() {
+  const [loader ,setLoader] = useState(true);
   const uploadDone = useUploadStore((s) => s.uploadDone);
   const getURL = useUploadStore((s) => s.getURL);
   const transcriptionData = useUploadStore((s) => s.transcriptionData);
@@ -40,6 +44,7 @@ export function Captions() {
   
   const [renderedVideoUrl, setRenderedVideoUrl] = useState<string | null>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
+
 
   // Function to get transcription from AssemblyAI
   const callAssemblyAI = useCallback(async () => {
@@ -111,7 +116,7 @@ export function Captions() {
           words: response.words,
           status: response.status || "completed",
         });
-
+          setLoader(false);
         // phase -2 is done ; If you are seeing this line of code then give me some Redbull 
       } else {
         throw new Error("No words array in response");
@@ -837,6 +842,18 @@ export function Captions() {
       alert(`Failed to download video: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
+
+  // Show loader until transcription is complete
+  if (loader) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader />
+          <LoaderDescription/>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-8">
