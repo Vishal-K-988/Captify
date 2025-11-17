@@ -2,12 +2,12 @@ import { HeroVideoDialog } from "@/components/ui/hero-video-dialog"
 export function HeroVideoDialogDemo() {
     const videoURL = "https://www.youtube.com/watch?v=ak-Ei831dtk"
   return (
-    <div className="relative w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl">
+    <div className="relative w-full max-w-[95vw] sm:max-w-lg md:max-w-xl lg:max-w-2xl">
       <HeroVideoDialog
         className="block dark:hidden w-full"
         animationStyle="from-center"
         videoSrc={videoURL}
-        thumbnailSrc="/ThumbnailLight.png"
+        thumbnailSrc="/thumbnailLight.png"
         thumbnailAlt="Hero Video"
       />
       <HeroVideoDialog

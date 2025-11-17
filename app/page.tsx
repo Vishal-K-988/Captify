@@ -40,7 +40,7 @@ export default function Home() {
         <div className="flex-1 flex justify-center md:justify-end w-full md:w-auto md:pr-8">
           <Description />
         </div>
-        <div className="flex-1 flex justify-center md:justify-start w-full md:w-auto md:pl-8">
+        <div className="flex-1 flex justify-center md:justify-start w-full md:w-auto md:pl-8 max-w-full">
           <HeroVideoDialogDemo />
         </div>
       </div>
