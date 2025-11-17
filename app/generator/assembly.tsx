@@ -827,7 +827,12 @@ export function Captions() {
         throw new Error("Invalid video blob");
       }
 
-  //  download link 
+      // Ensure the blob has the correct MIME type for MP4
+      if (blob.type !== "video/mp4") {
+        blob = new Blob([blob], { type: "video/mp4" });
+      }
+
+ //  download link 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
