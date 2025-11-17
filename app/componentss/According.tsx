@@ -46,6 +46,14 @@ import {
             </p>
           </AccordionContent>
         </AccordionItem>
+        <AccordionItem value="item-4">
+          <AccordionTrigger>Note that It would take the same time as that of the video length </AccordionTrigger>
+          <AccordionContent className="flex flex-col gap-4 text-balance">
+            <p>
+                meow meow
+            </p>
+          </AccordionContent>
+        </AccordionItem>
      
      
       </Accordion>

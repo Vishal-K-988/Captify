@@ -4,7 +4,7 @@ import { Geist, Geist_Mono, Noto_Sans, Noto_Sans_Devanagari } from "next/font/go
 import "./globals.css";
 import { ThemeToggler } from "./componentss/Theme";
 import { DockDemo } from "./componentss/Dock";
-import { ComicText } from "@/components/ui/comic-text";
+
 
 
 const geistSans = Geist({
@@ -33,8 +33,15 @@ const notoSansDevanagari = Noto_Sans_Devanagari({
 });
 
 export const metadata: Metadata = {
-  title: "capsify",
-  description: "Capsify. An AI-Integrated web application used to generate and add captions using Assembly AI plus Roomable . ",
+  title: "Captify",
+  description: "Captify. An AI-Integrated web application used to generate and add captions using Assembly AI plus Roomable . ",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -44,6 +51,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/favicon.ico" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoSans.variable} ${notoSansDevanagari.variable} antialiased`}
       > 

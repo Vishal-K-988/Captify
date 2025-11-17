@@ -63,7 +63,7 @@ const Icons = {
 
 const DATA = {
   navbar: [
-    { href: "http://localhost:3000", icon: HomeIcon, label: "Home" },
+    { href: "https://captify-neon.vercel.app/", icon: HomeIcon, label: "Home" },
     { href: "https://www.notion.so/vishalk988/Captify-2ae8a65a48518097b059ff981710e0ee?source=copy_link", icon: File, label: "Documentation" },
   ],
   contact: {
