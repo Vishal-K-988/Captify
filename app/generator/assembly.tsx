@@ -16,6 +16,8 @@ import { CAPTION_STYLES, type CaptionStyle } from "@/remotion/CaptionStyles";
 import { HINGLISH_FONT_FAMILY } from "@/remotion/fonts";
 import { Loader } from "../componentss/Loader";
 import { LoaderDescription } from "../componentss/LoaderDescription";
+import { ComicText } from "@/components/ui/comic-text";
+import { AccordingFooter } from "../componentss/According";
 
 
 // response from the Assem,bly AI 
@@ -434,6 +436,7 @@ export function Captions() {
           }
 
           // Update progress
+          // calculing in percentage
           const progress = Math.min((video.currentTime / videoDuration) * 100, 100);
           setRenderProgress(progress);
         }
@@ -549,6 +552,7 @@ export function Captions() {
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;
 
+   
     if (textWidth > maxWidth) {
       const words = text.split(" ");
       let line = "";
@@ -846,10 +850,22 @@ export function Captions() {
   // Show loader until transcription is complete
   if (loader) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader />
+      <div className="w-full min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
+        <div className="flex flex-col items-center space-y-8">
+          <div className="relative flex items-center justify-center">
+            <div className="z-10">
+              <Loader />
+            </div>
+          </div>
           <LoaderDescription/>
+          <div className="mt-6 flex flex-col items-center">
+            <div className="text-green-700 dark:text-green-200 text-sm font-medium tracking-wide">
+              Preparing your magical captions…
+            </div>
+            <div className="mt-1 text-zinc-500 dark:text-zinc-400 text-xs italic">
+              This may take a few seconds; thank you for your patience!
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -857,15 +873,10 @@ export function Captions() {
 
   return (
     <div className="container mx-auto p-8">
-      <h1 className="text-4xl font-bold mb-8 text-center">Video with Captions</h1>
+      <h1 className="text-4xl font-bold mb-8 text-center"><ComicText>Captify</ComicText></h1>
 
-      {/* Transcription Status */}
-      {isTranscribing && (
-        <div className="mb-4 p-4 bg-blue-100 rounded-lg">
-          <p className="text-blue-800">Transcribing video... Please wait.</p>
-        </div>
-      )}
-
+     
+    {/* for an edge case if there is an error in the transcription      */}
       {transcriptionError && (
         <div className="mb-4 p-4 bg-red-100 rounded-lg">
           <p className="text-red-800">Error: {transcriptionError}</p>
@@ -881,18 +892,19 @@ export function Captions() {
       {/* Caption Style Selector */}
       {transcriptionData && transcriptionData.words && (
         <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-3">Caption Style</h2>
+          <h2 className="text-2xl font-bold mb-3 text-center w-full">Caption Style</h2>
           <div className="flex flex-wrap gap-3 justify-center">
             {CAPTION_STYLES.map((style) => (
               <button
                 key={style.id}
                 onClick={() => setSelectedCaptionStyle(style.id)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:opacity-50 disabled:pointer-events-none border border-input px-4 py-2 ${
                   selectedCaptionStyle === style.id
-                    ? "bg-blue-600 text-white shadow-lg scale-105"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    ? "bg-primary text-primary-foreground shadow scale-105"
+                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 }`}
                 title={style.description}
+                type="button"
               >
                 {style.name}
               </button>
@@ -904,78 +916,93 @@ export function Captions() {
         </div>
       )}
 
-      {/* Remotion Player Preview */}
-      {transcriptionData && transcriptionData.words && getURL && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Preview</h2>
-          <div className="flex justify-center bg-black rounded-lg p-4">
-            <div style={{ width: "540px", height: "960px" }}>
-              <Player
-                // @ts-expect-error - Remotion Player type compatibility
-                component={VideoWithCaptions}
-                durationInFrames={Math.ceil(getVideoDuration() * 30)} 
-                compositionWidth={1080}
-                compositionHeight={1920}
-                fps={30}
-                controls
-                inputProps={{
-                  videoUrl: getURL,
-                  words: transcriptionData.words,
-                  captionStyle: selectedCaptionStyle,
-                }}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Render and Download Section */}
+     
+
       {transcriptionData && transcriptionData.words && (
-        <div className="space-y-4">
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={handleRender}
-              disabled={isRendering}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {isRendering ? `Rendering... ${Math.round(renderProgress)}%` : "Render Video"}
-            </button>
-
-            {renderedVideoUrl && (
-              <button
-                onClick={handleDownload}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                Download Video
-              </button>
-            )}
-          </div>
-
-          {renderedVideoUrl && (
-            <div className="mt-4">
-              <h3 className="text-xl font-semibold mb-2">Rendered Video</h3>
-              <video
-                src={renderedVideoUrl}
-                controls
-                className="w-full max-w-2xl mx-auto rounded-lg"
-              >
-                Your browser does not support the video tag.
-              </video>
+        <div className="flex flex-col md:flex-row justify-between items-start bg-white dark:bg-zinc-900 rounded-lg p-6 md:p-10 mb-10 mt-8 gap-8 shadow-md">
+          {/* Remotion Player Preview */}
+          {getURL && (
+            <div className="flex-1 flex flex-col items-center md:items-start">
+              <h2 className="mb-4 text-2xl font-bold text-center md:text-left">Preview</h2>
+              <div className="bg-black rounded-lg p-4 flex justify-center md:justify-start">
+                <div style={{ width: "340px", height: "604px" }}>
+                  <Player
+                    // @ts-expect-error - Remotion Player type compatibility
+                    component={VideoWithCaptions}
+                    durationInFrames={Math.ceil(getVideoDuration() * 30)} 
+                    compositionWidth={1080}
+                    compositionHeight={1920}
+                    fps={30}
+                    controls
+                    inputProps={{
+                      videoUrl: getURL,
+                      words: transcriptionData.words,
+                      captionStyle: selectedCaptionStyle,
+                    }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           )}
+
+          {/* Render and Download Section */}
+          <div className="flex-1 w-full md:px-8 space-y-4 mt-10 md:mt-0 flex flex-col items-center md:items-end">
+            <div className="flex gap-4 justify-center md:justify-end">
+              <button
+                onClick={handleRender}
+                disabled={isRendering}
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:opacity-50 disabled:pointer-events-none bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3"
+                type="button"
+              >
+                {isRendering ? `Rendering... ${Math.round(renderProgress)}%` : "Render Video"}
+              </button>
+
+              {renderedVideoUrl && (
+                <button
+                  onClick={handleDownload}
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-green-600 text-white hover:bg-green-700 px-6 py-3"
+                  type="button"
+                >
+                  Download Video
+                </button>
+              )}
+            </div>
+
+            {renderedVideoUrl && (
+              <div className="mt-4 w-full flex flex-col items-center">
+                <h3 className="text-xl font-bold mb-2 text-center md:text-right">Rendered Video</h3>
+                <div style={{ width: "340px", height: "604px" }}>
+                  <video
+                    src={renderedVideoUrl}
+                    controls
+                    style={{ width: "100%", height: "100%" }}
+                    className="rounded-lg"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
+
 
       {/* Loading State */}
       {!transcriptionData && !isTranscribing && !transcriptionError && (
         <div className="text-center">
-          <p className="text-gray-600">Preparing transcription...</p>
+          <p className="text-black-600">Preparing transcription...</p>
         </div>
       )}
+
+      <div className="mb-15  pb-20">
+        <AccordingFooter/>
+      </div>
     </div>
   );
 }
