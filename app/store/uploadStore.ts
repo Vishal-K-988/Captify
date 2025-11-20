@@ -76,6 +76,10 @@ interface UploadState {
   orientation: string;
   size: string;
   Keyword: string;
+  timelineSelection: {
+    start: number;
+    end: number;
+  };
 
   setUploadURL: (url: string) => void;
   setUploadDone: (done: boolean) => void;
@@ -89,6 +93,7 @@ interface UploadState {
   setOrientation: (orientation: string) => void;
   setSize: (size: string) => void;
   setKeyword: (keyword: string) => void;
+  setTimelineSelection: (start: number, end: number) => void;
 }
 
 
@@ -108,6 +113,10 @@ export const useUploadStore = create<UploadState>((set) => ({
   orientation: "portrait",
   size: "small",
   Keyword: "",
+  timelineSelection: {
+    start: 0,
+    end: 3,
+  },
 
   setUploadURL: (url) => set({ uploadURL: url }),
   setUploadDone: (done) => set({ uploadDone: done }),
@@ -139,5 +148,12 @@ export const useUploadStore = create<UploadState>((set) => ({
   setSize: (size) => set({
     size: size
   }),
-  setKeyword: (keyword) => set({ Keyword: keyword })
+  setKeyword: (keyword) => set({ Keyword: keyword }),
+  setTimelineSelection: (start, end) =>
+    set({
+      timelineSelection: {
+        start,
+        end,
+      },
+    }),
 }));

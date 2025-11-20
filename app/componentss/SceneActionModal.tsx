@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
+import { useUploadStore } from "../store/uploadStore";
 import type { SceneMarker, BrollAssignment } from "../store/uploadStore";
 import { Keyword } from "./KeyWord";
 import { OrientationDropDown } from "./Orientation";
@@ -25,45 +26,55 @@ export function SceneActionModal({
   onSearch,
   onSelectVideo,
 }: SceneActionModalProps) {
-  const [startTime, setStartTime] = useState<number>(marker.start);
-  const [endTime, setEndTime] = useState<number>(marker.end);
-
-  useEffect(() => {
-    setStartTime(marker.start);
-    setEndTime(marker.end);
-  }, [marker]);
-
-  const timeError =
-    startTime >= endTime ? "Start time must be less than end time." : null;
-
   const safeDuration =
     Number.isFinite(videoDuration) && videoDuration > 0
       ? videoDuration
       : marker.end || marker.start || 0;
 
-  const formatTimestamp = (seconds: number) => {
-    if (!Number.isFinite(seconds) || seconds < 0) {
-      return "0:00";
-    }
-    const totalSeconds = Math.floor(seconds);
-    const minutes = Math.floor(totalSeconds / 60)
-      .toString()
-      .padStart(2, "0");
-    const secs = Math.floor(totalSeconds % 60)
-      .toString()
-      .padStart(2, "0");
-    return `${minutes}:${secs}`;
-  };
+  const MIN_RANGE = 0.1;
 
-  const clamp = (value: number) =>
-    Math.min(Math.max(0, value), safeDuration);
+  const timelineSelection = useUploadStore((s) => s.timelineSelection);
+  const setTimelineSelection = useUploadStore((s) => s.setTimelineSelection);
+  const selectionValid =
+    timelineSelection.end - timelineSelection.start >= MIN_RANGE;
+
+  const clamp = useCallback(
+    (value: number) => Math.min(Math.max(0, value), safeDuration),
+    [safeDuration]
+  );
+
+  useEffect(() => {
+    if (!selectionValid) {
+      setTimelineSelection(marker.start, marker.end);
+    }
+  }, [selectionValid, marker.start, marker.end, setTimelineSelection]);
+
+  const startTime = selectionValid
+    ? timelineSelection.start
+    : marker.start;
+  const endTime = selectionValid ? timelineSelection.end : marker.end;
+
+  const timeError =
+    startTime >= endTime ? "Start time must be less than end time." : null;
 
   const handleStartChange = (value: number) => {
-    setStartTime(clamp(value));
+    const nextStart = clamp(value);
+    let nextEnd = endTime;
+    if (nextStart >= nextEnd - MIN_RANGE) {
+      nextEnd = clamp(nextStart + MIN_RANGE);
+    }
+    setTimelineSelection(nextStart, nextEnd);
   };
 
   const handleEndChange = (value: number) => {
-    setEndTime(clamp(value));
+    const nextEnd = clamp(value);
+    let nextStart = startTime;
+    if (nextEnd <= nextStart + MIN_RANGE) {
+      nextStart = clamp(nextEnd - MIN_RANGE);
+      setTimelineSelection(nextStart, clamp(nextEnd));
+    } else {
+      setTimelineSelection(nextStart, nextEnd);
+    }
   };
 
   return (
@@ -72,13 +83,9 @@ export function SceneActionModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {marker.source} segment
+              B-roll
             </p>
-            <h3 className="mt-1 text-2xl font-bold text-foreground">{marker.label}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {formatTimestamp(marker.start)} — {formatTimestamp(marker.end)} (
-              {(marker.end - marker.start).toFixed(1)}s)
-            </p>
+            <h3 className="mt-1 text-2xl font-bold text-foreground">B-roll</h3>
           </div>
           <button
             type="button"

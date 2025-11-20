@@ -21,6 +21,9 @@ import { ComicText } from "@/components/ui/comic-text";
 import { AccordingFooter } from "../componentss/According";
 import { SceneTimeline } from "../componentss/SceneTimeline";
 import { SceneActionModal } from "../componentss/SceneActionModal";
+import { LivePreview } from "../componentss/LivePreview";
+import { Loader } from "../componentss/Loader";
+import { LoaderDescription } from "../componentss/LoaderDescription";
 
 
 // response from the Assem,bly AI 
@@ -49,6 +52,8 @@ export function Captions() {
   const brollAssignments = useUploadStore((s) => s.brollAssignments);
   const setBrollAssignment = useUploadStore((s) => s.setBrollAssignment);
   const clearBrollAssignment = useUploadStore((s) => s.clearBrollAssignment);
+  const timelineSelection = useUploadStore((s) => s.timelineSelection);
+  const setTimelineSelection = useUploadStore((s) => s.setTimelineSelection);
 
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
@@ -61,6 +66,10 @@ export function Captions() {
   const [isSceneModalOpen, setIsSceneModalOpen] = useState(false);
 
   const handleSceneSelect = (marker: SceneMarker) => {
+    const assignment = brollAssignments[marker.id];
+    const nextStart = assignment ? assignment.start : marker.start;
+    const nextEnd = assignment ? assignment.end : marker.end;
+    setTimelineSelection(nextStart, nextEnd);
     setActiveSceneMarker(marker);
     setIsSceneModalOpen(true);
   };
@@ -584,8 +593,10 @@ export function Captions() {
 
           // Update progress
           // calculing in percentage
-          const progress = Math.min((video.currentTime / videoDuration) * 100, 100);
-          setRenderProgress(progress);
+          const rawProgress = Math.min((video.currentTime / videoDuration) * 100, 100);
+          const cappedProgress =
+            rawProgress >= 99 && mediaRecorder.state === "recording" ? 99 : rawProgress;
+          setRenderProgress(cappedProgress);
         }
 
         animationFrameId = requestAnimationFrame(renderFrame);
@@ -678,20 +689,30 @@ export function Captions() {
     if (!marker) {
       return;
     }
+    const selectionValid =
+      timelineSelection.end - timelineSelection.start >= 0.1;
     const videoLength = getVideoDuration();
     const clamp = (value: number) =>
       Math.min(Math.max(0, value), videoLength);
-    const start = clamp(
-      typeof startOverride === "number" ? startOverride : marker.start
-    );
-    let end = clamp(
-      typeof endOverride === "number" ? endOverride : marker.end
-    );
+
+    const startSource =
+      typeof startOverride === "number"
+        ? startOverride
+        : selectionValid
+          ? timelineSelection.start
+          : marker.start;
+    const endSource =
+      typeof endOverride === "number"
+        ? endOverride
+        : selectionValid
+          ? timelineSelection.end
+          : marker.end;
+
+    const start = clamp(startSource);
+    let end = clamp(endSource);
     if (start >= end) {
       end = clamp(start + 0.1);
     }
-    const finalStart = start;
-    const finalEnd = end;
 
     setBrollAssignment(sceneId, {
       sceneId,
@@ -703,8 +724,8 @@ export function Captions() {
       width: file.width,
       height: file.height,
       thumbnail: file.link,
-      start: finalStart,
-      end: finalEnd,
+      start,
+      end,
     });
   };
 
@@ -1073,6 +1094,23 @@ export function Captions() {
   //   );
   // }
 
+  if (
+    !transcriptionData &&
+    (isTranscribing || (uploadDone && !transcriptionError))
+  ) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center px-4 py-10">
+        <div className="flex flex-col items-center space-y-8">
+          <Loader />
+          <LoaderDescription />
+          <div className="text-center text-sm text-muted-foreground">
+            Generating captions with AssemblyAI. This may take a moment.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-8">
       <h1 className="text-4xl font-bold mb-8 text-center"><ComicText>Captify</ComicText></h1>
@@ -1127,9 +1165,17 @@ export function Captions() {
       {sceneMarkers.length > 0 && (
         <div className="mt-12">
           <h2 className="text-2xl font-bold text-center mb-3">Scene Timeline</h2>
-          <p className="text-center text-sm text-muted-foreground mb-6">
-            These segments are derived from AssemblyAI data. Click any marker to inspect its timing.
-          </p>
+          <div className="mx-auto max-w-3xl text-center text-sm text-muted-foreground mb-6 space-y-2">
+            <p>
+              1. Click a chapter to auto-fill its start and end time, then fine-tune the window using
+              the range slider above the Live Preview. Those timestamps power the Pexels search and
+              preview.
+            </p>
+            <p>
+              2. After reviewing the result in the preview, press <span className="font-semibold">Render Video</span> to bake
+              the B-roll into that exact timeframe and download the finished clip.
+            </p>
+          </div>
           <SceneTimeline
             markers={sceneMarkers}
             duration={getVideoDuration()}
@@ -1184,6 +1230,15 @@ export function Captions() {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {getURL && (
+        <div className="mt-10">
+          <LivePreview
+            videoUrl={getURL}
+            assignments={Object.values(brollAssignments)}
+          />
         </div>
       )}
 
