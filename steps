@@ -1,0 +1,49 @@
+### Plan For Scene Analysis & B‑Roll Workflow
+
+1. **Capture AssemblyAI Timeline Data**
+   - Extend the transcription fetch in `app/generator/assembly.tsx` and `uploadStore` to keep full `words`, `segments`, and speaker/timestamp info so we can detect pauses or scene transitions later.
+
+2. **Scene Segmentation Pipeline**
+   - Create a utility (e.g., `lib/sceneDetection.ts`) that ingests the stored AssemblyAI data and produces an ordered list of scene markers (`start`, `end`, confidence, speaker).
+   - Add API route if heavier processing is needed (e.g., `/api/scene-detect`) using AssemblyAI’s Paragraphs/Chapters endpoints or custom heuristic.
+
+3. **Persist Markers In Store**
+   - Extend Zustand store (`app/store/uploadStore.ts`) with `sceneMarkers` plus setter actions so the markers are accessible across components.
+
+4. **Timeline UI**
+   - Build a new component (e.g., `SceneTimeline`) within `app/generator` that:
+     - Renders a horizontal timeline with labeled markers.
+     - Lists scenes in a table view showing start/end times.
+     - Supports selecting a marker to open a modal.
+
+5. **Modal For B‑Roll Selection**
+   - Implement modal component triggered from timeline selection that shows:
+     - Current scene timing.
+     - Options: `Search stock` (existing Pexels flow) or `Generate with Gemini`.
+     - Space to preview selected/generated clip.
+
+6. **Gemini Veo Integration**
+   - Add server route (e.g., `/api/broll/gemini`) to request Veo clip generation based on prompt context; return playable URL or download token.
+   - Update modal to call this endpoint and store response.
+
+7. **Embedding B‑Roll**
+   - Decide on editing pipeline:
+     - Client-side canvas compositor (reuse existing render logic) or
+     - Server-side Remotion render.
+   - When user confirms, store an instruction (scene ID + b-roll URL) in Zustand (e.g., `brollSlots`).
+
+8. **Render Pipeline Updates**
+   - Modify `handleRender` (or Remotion props) to overlay/replace the video segment between `start`/`end` with the selected B‑roll clip.
+   - Ensure audio handling: crossfade or keep original track based on requirement.
+
+9. **User Feedback & Persistence**
+   - Show inline indicators on the timeline for scenes with attached B‑roll.
+   - Optionally persist configuration via backend (e.g., Supabase/DB) so users can revisit edits.
+
+10. **Testing & Validation**
+    - Unit-test scene detection utility.
+    - Verify timeline UI interactions.
+    - Exercise render path with and without B‑roll replacements.
+    - Confirm Gemini and Pexels flows gracefully handle failures.
+
+Once you’re happy with this roadmap, we can start implementing step 1.

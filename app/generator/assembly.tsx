@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useUploadStore } from "../store/uploadStore";
+import type { SceneMarker } from "../store/uploadStore";
+import { extractSceneMarkers } from "@/lib/sceneMarkers";
+import type { PexelsVideoFile } from "@/lib/pexels";
 import dynamic from "next/dynamic";
 
 // Dynamically import Remotion Player to avoid SSR issues
@@ -14,10 +17,10 @@ const Player = dynamic(
 import { VideoWithCaptions } from "@/remotion/VideoWithCaptions";
 import { CAPTION_STYLES, type CaptionStyle } from "@/remotion/CaptionStyles";
 import { HINGLISH_FONT_FAMILY } from "@/remotion/fonts";
-import { Loader } from "../componentss/Loader";
-import { LoaderDescription } from "../componentss/LoaderDescription";
 import { ComicText } from "@/components/ui/comic-text";
 import { AccordingFooter } from "../componentss/According";
+import { SceneTimeline } from "../componentss/SceneTimeline";
+import { SceneActionModal } from "../componentss/SceneActionModal";
 
 
 // response from the Assem,bly AI 
@@ -29,15 +32,23 @@ interface Word {
   speaker?: string;
 }
 
-
 export function Captions() {
-  const [loader ,setLoader] = useState(true);
   const uploadDone = useUploadStore((s) => s.uploadDone);
   const getURL = useUploadStore((s) => s.getURL);
   const transcriptionData = useUploadStore((s) => s.transcriptionData);
   const setTranscriptionData = useUploadStore((s) => s.setTranscriptionData);
+  const setSceneMarkers = useUploadStore((s) => s.setSceneMarkers);
+  const sceneMarkers = useUploadStore((s) => s.sceneMarkers);
   const selectedCaptionStyle = useUploadStore((s) => s.selectedCaptionStyle);
   const setSelectedCaptionStyle = useUploadStore((s) => s.setSelectedCaptionStyle);
+  const query = useUploadStore((s) => s.Keyword);
+  const orientation = useUploadStore((s) => s.orientation);
+  const size = useUploadStore((s) => s.size);
+  const activeSceneMarker = useUploadStore((s) => s.activeSceneMarker);
+  const setActiveSceneMarker = useUploadStore((s) => s.setActiveSceneMarker);
+  const brollAssignments = useUploadStore((s) => s.brollAssignments);
+  const setBrollAssignment = useUploadStore((s) => s.setBrollAssignment);
+  const clearBrollAssignment = useUploadStore((s) => s.clearBrollAssignment);
 
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
@@ -46,7 +57,50 @@ export function Captions() {
   
   const [renderedVideoUrl, setRenderedVideoUrl] = useState<string | null>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
+  const [videoOptions, setVideoOptions] = useState<PexelsVideoFile[]>([]);
+  const [isSceneModalOpen, setIsSceneModalOpen] = useState(false);
 
+  const handleSceneSelect = (marker: SceneMarker) => {
+    setActiveSceneMarker(marker);
+    setIsSceneModalOpen(true);
+  };
+
+  const handleSceneModalClose = () => {
+    setIsSceneModalOpen(false);
+    setActiveSceneMarker(null);
+  };
+
+
+  // Function to search Pexels videos
+  const handlePexelsSearch = async () => {
+    try {
+      const response = await fetch("/api/pexels", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          orientation: orientation,
+          size : size
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to search Pexels");
+      }
+
+      const data = await response.json();
+      const videoFiles: PexelsVideoFile[] =
+        data?.videos?.[0]?.video_files?.filter((file: PexelsVideoFile) => Boolean(file.link)) ?? [];
+
+      setVideoOptions(videoFiles);
+      console.log("Pexels API Response:", videoFiles);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Pexels search failed";
+      console.error("Error searching Pexels:", errorMessage);
+    }
+  };
 
   // Function to get transcription from AssemblyAI
   const callAssemblyAI = useCallback(async () => {
@@ -75,6 +129,9 @@ export function Captions() {
         code_switching: true,
         code_switching_confidence_threshold: 0.5,
       },
+  auto_chapters: true,
+  auto_highlights: true,
+  entity_detection: true,
     };
 
     try {
@@ -113,12 +170,19 @@ export function Captions() {
       // Storing th e transcription data in Zustand store
       // Alos checking if the 'response.words' exists and is an array
       if (response.words && Array.isArray(response.words)) {
-        setTranscriptionData({
+        const transcriptionPayload = {
           text: response.text || "",
           words: response.words,
           status: response.status || "completed",
-        });
-          setLoader(false);
+          utterances: Array.isArray(response.utterances) ? response.utterances : undefined,
+          paragraphs: Array.isArray(response.paragraphs) ? response.paragraphs : undefined,
+          chapters: Array.isArray(response.chapters) ? response.chapters : undefined,
+          audioDuration: typeof response.audio_duration === "number" ? response.audio_duration : undefined,
+          transcriptId: typeof response.id === "string" ? response.id : undefined,
+        };
+
+        setTranscriptionData(transcriptionPayload);
+        setSceneMarkers(extractSceneMarkers(transcriptionPayload));
         // phase -2 is done ; If you are seeing this line of code then give me some Redbull 
       } else {
         throw new Error("No words array in response");
@@ -130,7 +194,7 @@ export function Captions() {
     } finally {
       setIsTranscribing(false);
     }
-  }, [getURL, transcriptionData, setTranscriptionData]);
+  }, [getURL, transcriptionData, setTranscriptionData, setSceneMarkers]);
 
   // Calling   AssemblyAI when component mounts
   useEffect(() => {
@@ -167,13 +231,13 @@ export function Captions() {
   };
 
   // Will convert this to loaderr 
-  if (!uploadDone) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <h2 className="text-2xl">Upload a video First!</h2>
-      </div>
-    );
-  }
+  // if (!uploadDone) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen">
+  //       <h2 className="text-2xl">Upload a video First!</h2>
+  //     </div>
+  //   );
+  // }
 
   // video rendering with canvas overlay
   const handleRender = async () => {
@@ -186,6 +250,10 @@ export function Captions() {
     setRenderProgress(0);
 
     try {
+
+      const activeAssignments = Object.values(brollAssignments);
+      const hasBroll = activeAssignments.length > 0;
+      const brollVideoElements: Record<string, HTMLVideoElement> = {};
      
       const video = document.createElement("video");
       video.crossOrigin = "anonymous";
@@ -195,22 +263,55 @@ export function Captions() {
       video.volume = 1.0; 
       
     
-      await new Promise<void>((resolve, reject) => {
-        video.onloadedmetadata = () => {
-          // Ensure video dimensions are available
-          if (video.videoWidth > 0 && video.videoHeight > 0) {
-            resolve();
-          }
-        };
-        video.oncanplay = () => {
-          resolve();
-        };
-        video.onerror = (e) => {
-          console.error("Video error:", e);
-          reject(new Error("Failed to load video"));
-        };
-        video.load();
-      });
+      const waitForVideoReady = (element: HTMLVideoElement) =>
+        new Promise<void>((resolve, reject) => {
+          const handleReady = () => {
+            if (element.videoWidth > 0 && element.videoHeight > 0) {
+              resolve();
+            }
+          };
+          element.onloadedmetadata = handleReady;
+          element.oncanplay = handleReady;
+          element.onerror = (e) => {
+            console.error("Video error:", e);
+            reject(new Error("Failed to load video"));
+          };
+          element.load();
+        });
+
+      await waitForVideoReady(video);
+
+      const loadBrollVideo = (url: string) =>
+        new Promise<HTMLVideoElement>((resolve, reject) => {
+          const auxVideo = document.createElement("video");
+          auxVideo.crossOrigin = "anonymous";
+          auxVideo.src = url;
+          auxVideo.loop = true;
+          auxVideo.muted = true;
+          auxVideo.playsInline = true;
+          auxVideo.onloadeddata = () => resolve(auxVideo);
+          auxVideo.onerror = (e) => {
+            console.warn("Failed to load B-roll video", e);
+            reject(new Error("Failed to load B-roll video"));
+          };
+          auxVideo.load();
+        });
+
+      if (hasBroll) {
+        await Promise.all(
+          activeAssignments.map(async (assignment) => {
+            if (!assignment?.url) {
+              return;
+            }
+            try {
+              const auxVideo = await loadBrollVideo(assignment.url);
+              brollVideoElements[assignment.sceneId] = auxVideo;
+            } catch (error) {
+              console.warn("Skipping B-roll for scene", assignment.sceneId, error);
+            }
+          })
+        );
+      }
 
       // This is a canvas for showing the video 
       const canvas = document.createElement("canvas");
@@ -314,6 +415,18 @@ export function Captions() {
         }
       };
 
+      const cleanupBroll = () => {
+        Object.values(brollVideoElements).forEach((element) => {
+          try {
+            element.pause();
+            element.removeAttribute("src");
+            element.load();
+          } catch (error) {
+            console.warn("Error cleaning B-roll video element", error);
+          }
+        });
+      };
+
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunks, { type: mimeType });
         const url = URL.createObjectURL(blob);
@@ -323,6 +436,7 @@ export function Captions() {
         // Cleanup
         canvas.remove();
         video.remove();
+        cleanupBroll();
       };
 
       mediaRecorder.onerror = (e) => {
@@ -330,6 +444,7 @@ export function Captions() {
         setIsRendering(false);
         canvas.remove();
         video.remove();
+        cleanupBroll();
       };
 
       // Wait a bit for audio to be set up
@@ -356,8 +471,43 @@ export function Captions() {
           ctx.fillStyle = "#000";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-          // Draw video frame
-          const videoAspect = video.videoWidth / video.videoHeight;
+          const currentTime = video.currentTime;
+
+          let renderVideo: HTMLVideoElement = video;
+          if (hasBroll && activeAssignments.length > 0) {
+            const activeAssignment =
+              activeAssignments.find(
+                (assignment) =>
+                  currentTime >= assignment.start && currentTime <= assignment.end
+              ) || null;
+            if (activeAssignment) {
+              const targetVideo = brollVideoElements[activeAssignment.sceneId];
+              if (targetVideo && targetVideo.readyState >= 2) {
+                const relativeTime = Math.max(0, currentTime - activeAssignment.start);
+                if (
+                  targetVideo.duration &&
+                  Number.isFinite(targetVideo.duration) &&
+                  targetVideo.duration > 0
+                ) {
+                  const normalized = Math.min(
+                    targetVideo.duration - 0.05,
+                    relativeTime % targetVideo.duration
+                  );
+                  if (Math.abs(targetVideo.currentTime - normalized) > 0.3) {
+                    targetVideo.currentTime = normalized;
+                  }
+                }
+                if (targetVideo.paused) {
+                  targetVideo.play().catch(() => undefined);
+                }
+                renderVideo = targetVideo;
+              }
+            }
+          }
+
+          const renderAspect =
+            (renderVideo.videoWidth || video.videoWidth) /
+            (renderVideo.videoHeight || video.videoHeight);
           const canvasAspect = canvas.width / canvas.height;
           
           let drawWidth = canvas.width;
@@ -365,19 +515,16 @@ export function Captions() {
           let offsetX = 0;
           let offsetY = 0;
 
-          if (videoAspect > canvasAspect) {
-            drawHeight = canvas.width / videoAspect;
+          if (renderAspect > canvasAspect) {
+            drawHeight = canvas.width / renderAspect;
             offsetY = (canvas.height - drawHeight) / 2;
           } else {
-            drawWidth = canvas.height * videoAspect;
+            drawWidth = canvas.height * renderAspect;
             offsetX = (canvas.width - drawWidth) / 2;
           }
 
           try {
-            ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
-
-            // Draw captions
-            const currentTime = video.currentTime;
+            ctx.drawImage(renderVideo, offsetX, offsetY, drawWidth, drawHeight);
             
             // Handle both seconds and milliseconds 
             const visibleWords = transcriptionData.words.filter((word) => {
@@ -518,6 +665,56 @@ export function Captions() {
           drawTikTokCaption(ctx, text, canvasWidth, canvasHeight);
         }
         break;
+    }
+  };
+
+  const assignPexelsToScene = (
+    sceneId: string,
+    file: PexelsVideoFile,
+    startOverride?: number,
+    endOverride?: number
+  ) => {
+    const marker = sceneMarkers.find((scene) => scene.id === sceneId);
+    if (!marker) {
+      return;
+    }
+    const videoLength = getVideoDuration();
+    const clamp = (value: number) =>
+      Math.min(Math.max(0, value), videoLength);
+    const start = clamp(
+      typeof startOverride === "number" ? startOverride : marker.start
+    );
+    let end = clamp(
+      typeof endOverride === "number" ? endOverride : marker.end
+    );
+    if (start >= end) {
+      end = clamp(start + 0.1);
+    }
+    const finalStart = start;
+    const finalEnd = end;
+
+    setBrollAssignment(sceneId, {
+      sceneId,
+      source: "pexels",
+      url: file.link,
+      label: marker.label,
+      providerId: file.id,
+      quality: file.quality,
+      width: file.width,
+      height: file.height,
+      thumbnail: file.link,
+      start: finalStart,
+      end: finalEnd,
+    });
+  };
+
+  const handleModalVideoSelect = (
+    file: PexelsVideoFile,
+    start: number,
+    end: number
+  ) => {
+    if (activeSceneMarker) {
+      assignPexelsToScene(activeSceneMarker.id, file, start, end);
     }
   };
 
@@ -853,28 +1050,28 @@ export function Captions() {
   };
 
   // Show loader until transcription is complete
-  if (loader) {
-    return (
-      <div className="w-full min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
-        <div className="flex flex-col items-center space-y-8">
-          <div className="relative flex items-center justify-center">
-            <div className="z-10">
-              <Loader />
-            </div>
-          </div>
-          <LoaderDescription/>
-          <div className="mt-6 flex flex-col items-center">
-            <div className="text-green-700 dark:text-green-200 text-sm font-medium tracking-wide">
-              Preparing your magical captions…
-            </div>
-            <div className="mt-1 text-zinc-500 dark:text-zinc-400 text-xs italic">
-              This may take a few seconds; thank you for your patience!
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // if (loader) {
+  //   return (
+  //     <div className="w-full min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
+  //       <div className="flex flex-col items-center space-y-8">
+  //         <div className="relative flex items-center justify-center">
+  //           <div className="z-10">
+  //             <Loader />
+  //           </div>
+  //         </div>
+  //         <LoaderDescription/>
+  //         <div className="mt-6 flex flex-col items-center">
+  //           <div className="text-green-700 dark:text-green-200 text-sm font-medium tracking-wide">
+  //             Preparing your magical captions…
+  //           </div>
+  //           <div className="mt-1 text-zinc-500 dark:text-zinc-400 text-xs italic">
+  //             This may take a few seconds; thank you for your patience!
+  //           </div>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="container mx-auto p-8">
@@ -921,6 +1118,78 @@ export function Captions() {
         </div>
       )}
 
+      {/* Pexels input area !  */} 
+      
+       
+
+      
+
+      {sceneMarkers.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold text-center mb-3">Scene Timeline</h2>
+          <p className="text-center text-sm text-muted-foreground mb-6">
+            These segments are derived from AssemblyAI data. Click any marker to inspect its timing.
+          </p>
+          <SceneTimeline
+            markers={sceneMarkers}
+            duration={getVideoDuration()}
+            onSelect={handleSceneSelect}
+            assignedScenes={brollAssignments}
+          />
+        </div>
+      )}
+
+      {Object.keys(brollAssignments).length > 0 && (
+        <div className="mt-10">
+          <h3 className="text-xl font-semibold mb-4 text-center">B-Roll Assignments</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            {Object.values(brollAssignments).map((assignment) => {
+              const marker = sceneMarkers.find((scene) => scene.id === assignment.sceneId);
+              return (
+                <div
+                  key={`assignment-${assignment.sceneId}`}
+                  className="rounded-2xl border border-border bg-white/80 p-4 shadow-sm dark:bg-zinc-900/60"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-muted-foreground uppercase">
+                        {assignment.source.toUpperCase()}
+                      </p>
+                      <p className="text-lg font-bold text-foreground">
+                        {marker?.label ?? "Scene"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {assignment.start.toFixed(2)}s — {assignment.end.toFixed(2)}s
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => clearBrollAssignment(assignment.sceneId)}
+                      className="text-xs font-semibold text-destructive hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="mt-3 rounded-xl bg-black">
+                    <video
+                      src={assignment.url}
+                      muted
+                      autoPlay
+                      loop
+                      playsInline
+                      className="h-48 w-full rounded-xl object-cover"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      
+
+      
 
      
 
@@ -1008,6 +1277,19 @@ export function Captions() {
       <div className="mb-15  pb-20">
         <AccordingFooter/>
       </div>
+
+      {isSceneModalOpen && activeSceneMarker && (
+        <SceneActionModal
+          key={activeSceneMarker.id}
+          marker={activeSceneMarker}
+          assignment={brollAssignments[activeSceneMarker.id]}
+          pexelsVideos={videoOptions}
+          videoDuration={getVideoDuration()}
+          onClose={handleSceneModalClose}
+          onSearch={handlePexelsSearch}
+          onSelectVideo={handleModalVideoSelect}
+        />
+      )}
     </div>
   );
 }

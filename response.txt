@@ -1,0 +1,8 @@
+reqauirements : 
+1. Analyzing video & splitting scenes with AI
+2. Basically analyze the repsonse from teh assembly ai and generate the markings 
+3. with respect to these markings I need to split the clip into desired sections 
+4. user should see the timeline like in ( time ) (start and end time ) and when chooses a particular time as modal should appear j
+having a choice to search or create teh B-ROLL  with gemini veo model to generate the video . 
+5. After generating or selecting the video embedd that video into the uploaded clip which user has uploaded at that particular timedframe 
+6.  and when clicked rendered the B-roll onto that timeframe 
